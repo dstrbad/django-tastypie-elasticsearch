@@ -239,7 +239,7 @@ class ElasticsearchResource(Resource):
             end = kwargs['body']['size'] + start
 
             if kwargs['body']['email__istartswith']:
-                result = basic_s[0:10].query(email__prefix=kwargs['body']['email__istartswith'] + '*').order_by('email').execute()
+                result = basic_s[0:10].query(email__prefix=kwargs['body']['email__istartswith']).order_by('email').execute()
             else:
                 result = basic_s[start:end].filter(anonymous=kwargs['body']['anon']).order_by('email').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
