@@ -232,6 +232,7 @@ class ElasticsearchResource(Resource):
 
         try:
            # order_by, suggest
+            import pdb; pdb.set_trace()
             basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
             #import pdb; pdb.set_trace()
 
