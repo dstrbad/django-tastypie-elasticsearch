@@ -232,14 +232,12 @@ class ElasticsearchResource(Resource):
 
         try:
            # order_by, suggest
-            import pdb; pdb.set_trace()
             basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
-            #import pdb; pdb.set_trace()
 
             if kwargs['body']['email__istartswith']:
-                result = basic_s.filter(kwargs['body']['anon']=False).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
+                result = basic_s.filter(anonymous=kwargs['body']['anon']).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').order_by('email').execute()
             else:
-                result = basic_s.query().execute()
+                result = basic_s.filter(anonymous=kwargs['body']['anon']).query().order_by('email').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
