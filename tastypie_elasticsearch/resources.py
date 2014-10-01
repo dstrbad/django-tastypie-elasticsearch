@@ -205,7 +205,7 @@ class ElasticsearchResource(Resource):
         query = []
 
         for key, value in request.GET.items():
-            if key not in ["offset", "limit", "query_type", "format", 'order_by', 'email__istartswith']:
+            if key not in ["offset", "limit", "query_type", "format", 'order_by', 'email__istartswith', "anonymous"]:
                 q = {".".join([self._meta.doc_type, key]): value}
                 query.append({"text":q})
 
@@ -217,6 +217,7 @@ class ElasticsearchResource(Resource):
             "from": long(request.GET.get("offset", 0)),
             "size": long(request.GET.get("limit", self._meta.limit)),
             "email__istartswith": request.GET.get("email__istartswith", None),
+            "anon": request.GET.get("anonymous", True),
             "sort": sort or [],
         }
         # extend result dict if body is present
@@ -235,7 +236,7 @@ class ElasticsearchResource(Resource):
             #import pdb; pdb.set_trace()
 
             if kwargs['body']['email__istartswith']:
-                result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
+                result = basic_s.filter(kwargs['body']['anon']=False).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
             else:
                 result = basic_s.query().execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
