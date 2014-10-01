@@ -232,7 +232,7 @@ class ElasticsearchResource(Resource):
         try:
            # order_by, suggest
             basic_s = S().es(urls=settings.ES_URL).indexes('dev_alibris').doctypes('subscribers')
-            #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
 
             if kwargs['body']['email__istartswith']:
                 result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
@@ -243,7 +243,7 @@ class ElasticsearchResource(Resource):
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
             raise ImmediateHttpResponse(response)
         else:
-            return ElasticsearchResult(result, kwargs)
+            return ElasticsearchResult(result.response, kwargs)
 
     def obj_get_list(self, request=None, **kwargs):
         # Filtering disabled for brevity...
