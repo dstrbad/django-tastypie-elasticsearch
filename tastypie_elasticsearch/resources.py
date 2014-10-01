@@ -236,7 +236,7 @@ class ElasticsearchResource(Resource):
             basic_s = S().es(urls=settings.ES_URL).indexes('go_' + kwargs['body']['wid']).doctypes('subscribers')
 
             start = kwargs['body']['from']
-            end = kwargs['body']['size']
+            end = kwargs['body']['size'] + start
 
             if kwargs['body']['email__istartswith']:
                 result = basic_s[start:end].query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
