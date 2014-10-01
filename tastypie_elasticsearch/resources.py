@@ -218,6 +218,7 @@ class ElasticsearchResource(Resource):
             "size": long(request.GET.get("limit", self._meta.limit)),
             "email__istartswith": request.GET.get("email__istartswith", None),
             "anon": request.GET.get("anonymous", "true"),
+            "wid": request.GET.get("wid"),
             "sort": sort or [],
         }
         # extend result dict if body is present
@@ -232,7 +233,7 @@ class ElasticsearchResource(Resource):
 
         try:
            # order_by, suggest
-            basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
+            basic_s = S().es(urls=settings.ES_URL).indexes('go_' + kwargs['body']['wid']).doctypes('subscribers')
 
             if kwargs['body']['email__istartswith']:
                 result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
