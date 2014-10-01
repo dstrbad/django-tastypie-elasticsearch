@@ -217,7 +217,7 @@ class ElasticsearchResource(Resource):
             "from": long(request.GET.get("offset", 0)),
             "size": long(request.GET.get("limit", self._meta.limit)),
             "email__istartswith": request.GET.get("email__istartswith", None),
-            "anon": request.GET.get("anonymous", True),
+            "anon": request.GET.get("anonymous", "true"),
             "sort": sort or [],
         }
         # extend result dict if body is present
@@ -235,9 +235,9 @@ class ElasticsearchResource(Resource):
             basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
 
             if kwargs['body']['email__istartswith']:
-                result = basic_s.filter(anonymous=kwargs['body']['anon']).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').order_by('email').execute()
+                result = basic_s.filter(anonymous=kwargs['body']['anon']).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').order_by('id').execute()
             else:
-                result = basic_s.filter(anonymous=kwargs['body']['anon']).query().order_by('email').execute()
+                result = basic_s.filter(anonymous=kwargs['body']['anon']).query().order_by('id').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
