@@ -232,7 +232,7 @@ class ElasticsearchResource(Resource):
         try:
            # order_by, suggest
             basic_s = S().es(urls=settings.ES_URL).indexes('dev_alibris').doctypes('subscribers')
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
 
             if kwargs['body']['email__istartswith']:
                 result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
