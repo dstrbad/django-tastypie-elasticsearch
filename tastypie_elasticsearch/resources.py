@@ -235,9 +235,9 @@ class ElasticsearchResource(Resource):
             basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
 
             if kwargs['body']['email__istartswith']:
-                result = basic_s.filter(anonymous=kwargs['body']['anon']).query(email__wildcard=kwargs['body']['email__istartswith'] + '*').order_by('id').execute()
+                result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
             else:
-                result = basic_s.filter(anonymous=kwargs['body']['anon']).order_by('id').execute()
+                result = basic_s.filter(anonymous=kwargs['body']['anon']).execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
