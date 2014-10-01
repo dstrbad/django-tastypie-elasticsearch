@@ -231,7 +231,7 @@ class ElasticsearchResource(Resource):
 
         try:
            # order_by, suggest
-            basic_s = S().es(urls=settings.ES_URL).indexes('dev_alibris').doctypes('subscribers')
+            basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
             #import pdb; pdb.set_trace()
 
             if kwargs['body']['email__istartswith']:
