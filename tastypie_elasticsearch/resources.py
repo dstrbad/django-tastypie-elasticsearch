@@ -26,6 +26,9 @@ from elasticsearch.connection import Urllib3HttpConnection
 
 from paginator import ElasticsearchResult, ElasticsearchPaginator
 
+import elasticutils as eslib
+from elasticutils import S, F
+
 class ElasticsearchDeclarativeMetaclass(DeclarativeMetaclass):
     """
     This class has the same functionality as its supper ``ModelDeclarativeMetaclass``.
@@ -35,7 +38,7 @@ class ElasticsearchDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(self, name, bases, attrs):
         meta = attrs.get('Meta')
 
-        new_class = super(ElasticsearchDeclarativeMetaclass, 
+        new_class = super(ElasticsearchDeclarativeMetaclass,
             self).__new__(self, name, bases, attrs)
 
         override = {
@@ -63,7 +66,7 @@ class ElasticsearchDeclarativeMetaclass(DeclarativeMetaclass):
 class ElasticsearchResource(Resource):
     """
     Elasticsearch Base Resource
-    
+
     """
 
     __metaclass__ = ElasticsearchDeclarativeMetaclass
@@ -80,8 +83,8 @@ class ElasticsearchResource(Resource):
                 self.client.indices.create(self._meta.write_index, body=self._meta.index_settings)
 
             # create the alias if missing and create_if_missing
-            if (self._meta.write_index != self._meta.index and 
-                    not self.client.indices.exists_alias(self._meta.index, 
+            if (self._meta.write_index != self._meta.index and
+                    not self.client.indices.exists_alias(self._meta.index,
                                                          self._meta.write_index)):
                 self.client.indices.put_alias(self._meta.write_index, self._meta.index)
 
@@ -93,7 +96,7 @@ class ElasticsearchResource(Resource):
                 host, port = server.strip().split(":")
                 hosts.append({"host":host, "port":port})
 
-            self._es = elasticsearch.Elasticsearch(hosts=hosts, 
+            self._es = elasticsearch.Elasticsearch(hosts=hosts,
                                                    connection_class=self._meta.es_connection_class,
                                                    timeout=self._meta.es_timeout)
         return self._es
@@ -105,25 +108,25 @@ class ElasticsearchResource(Resource):
         tr = trailing_slash()
         return [
             # percolate implementation
-            url(r"^(?P<resource_name>%s)/percolate%s$" % (resource_name, tr), 
+            url(r"^(?P<resource_name>%s)/percolate%s$" % (resource_name, tr),
                 self.wrap_view('get_percolate'), name="api_get_percolate"),
 
             # default implementation
-            url(r"^(?P<resource_name>%s)%s$" % (resource_name, tr), 
+            url(r"^(?P<resource_name>%s)%s$" % (resource_name, tr),
                 self.wrap_view('dispatch_list'), name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/schema%s$" % (resource_name, tr), 
+            url(r"^(?P<resource_name>%s)/schema%s$" % (resource_name, tr),
                 self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (resource_name, 
-                self._meta.detail_uri_name, tr), self.wrap_view('get_multiple'), 
+            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (resource_name,
+                self._meta.detail_uri_name, tr), self.wrap_view('get_multiple'),
                 name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (resource_name, 
-                self._meta.detail_uri_name, tr), self.wrap_view('dispatch_detail'), 
+            url(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (resource_name,
+                self._meta.detail_uri_name, tr), self.wrap_view('dispatch_detail'),
                 name="api_dispatch_detail"),
         ]
 
     def build_schema(self):
         schema = super(ElasticsearchResource, self).build_schema()
-        
+
         if self._meta.include_mapping_fields:
             mapping = self.client.indices.get_mapping(self._meta.index, self._meta.doc_type)
             mapping_fields = mapping[self._meta.doc_type]["properties"]
@@ -144,7 +147,7 @@ class ElasticsearchResource(Resource):
             schema["fields"] = fields
 
         return schema
-    
+
     def full_dehydrate(self, bundle, for_list=False):
         bundle = super(ElasticsearchResource, self).full_dehydrate(bundle, for_list)
 
@@ -154,8 +157,11 @@ class ElasticsearchResource(Resource):
         bundle.data["resource_uri"] = self._build_reverse_url('api_dispatch_detail', kwargs=kwargs)
 
         bundle.data.update(bundle.obj.get("_source", bundle.obj.get("fields")))
+
+        bundle.data['id'] = bundle.obj['_id']
+
         return bundle
-    
+
     def full_hydrate(self, bundle):
         bundle = super(ElasticsearchResource, self).full_hydrate(bundle)
         bundle.obj.update(bundle.data)
@@ -165,9 +171,9 @@ class ElasticsearchResource(Resource):
         if bundle_or_obj is None:
             result = super(ElasticsearchResource, self).get_resource_uri(bundle_or_obj)
             return result
-    
-    
-        obj = (bundle_or_obj.obj if 
+
+
+        obj = (bundle_or_obj.obj if
             isinstance(bundle_or_obj, Bundle) else bundle_or_obj)
 
         kwargs = {
@@ -176,14 +182,14 @@ class ElasticsearchResource(Resource):
         }
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
-            
+
         return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
 
     def get_sorting(self, request, key="order_by"):
         order_by = request.GET.get(key)
         if order_by:
             l = []
-            
+
             items = [i.strip() for i in order_by.split(",")]
             for item in items:
                 order = "asc"
@@ -193,23 +199,24 @@ class ElasticsearchResource(Resource):
                 l.append({item:order})
             return l
         return None
-    
+
     def build_query(self, request):
         sort = self.get_sorting(request)
         query = []
 
         for key, value in request.GET.items():
-            if key not in ["offset", "limit", "query_type", "format", 'order_by']:
+            if key not in ["offset", "limit", "query_type", "format", 'order_by', 'email__istartswith']:
                 q = {".".join([self._meta.doc_type, key]): value}
                 query.append({"text":q})
 
         if len(query) is 0:
             # show all
             query.append({"match_all": {}})
-        
+
         result = {
             "from": long(request.GET.get("offset", 0)),
             "size": long(request.GET.get("limit", self._meta.limit)),
+            "email__istartswith": request.GET.get("email__istartswith", None),
             "sort": sort or [],
         }
         # extend result dict if body is present
@@ -223,13 +230,21 @@ class ElasticsearchResource(Resource):
         kwargs['body'] = self.build_query(request)
 
         try:
-            result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
+           # order_by, suggest
+            basic_s = S().es(urls=settings.ES_URL).indexes('go_internal_tests').doctypes('subscribers')
+            #import pdb; pdb.set_trace()
+
+            if kwargs['body']['email__istartswith']:
+                result = basic_s.query(email__wildcard=kwargs['body']['email__istartswith'] + '*').execute()
+            else:
+                result = basic_s.query().execute()
+            #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
             raise ImmediateHttpResponse(response)
         else:
             return ElasticsearchResult(result, kwargs)
-            
+
     def obj_get_list(self, request=None, **kwargs):
         # Filtering disabled for brevity...
         return self.get_object_list(kwargs['bundle'].request)
@@ -253,20 +268,20 @@ class ElasticsearchResource(Resource):
         bundle = self.full_hydrate(bundle)
         pk = kwargs.get("pk", bundle.obj.get("_id"))
 
-        result = self.client.index(self._meta.index, self._meta.doc_type, bundle.obj, 
+        result = self.client.index(self._meta.index, self._meta.doc_type, bundle.obj,
                                    id=pk, refresh=True)
         result.update(bundle.obj)
         return result
-    
+
     def obj_update(self, bundle, request=None, **kwargs):
         bundle.obj = dict(kwargs)
         bundle = self.full_hydrate(bundle)
         pk = kwargs.get('pk', bundle.obj.get('_id'))
-        result = self.client.update(self._meta.index, self._meta.doc_type, 
+        result = self.client.update(self._meta.index, self._meta.doc_type,
                                     bundle.obj, id=pk, refresh=True)
         result.update(bundle.obj)
         return result
-    
+
     def obj_delete_list(self, request=None, **kwargs):
         pk = kwargs.get('pk')
         query = request.body
@@ -285,7 +300,7 @@ class ElasticsearchResource(Resource):
         self.throttle_check(request)
 
         # Do the query.
-        result = self.client.percolate(self._meta.index, self._meta.doc_type, 
+        result = self.client.percolate(self._meta.index, self._meta.doc_type,
                                         body=dict(doc=json.loads(request.body)))
         object_list = {
             'meta': result,
@@ -359,7 +374,7 @@ class ElasticsearchResource(Resource):
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
         bulk_commands = []
-        
+
         bundles_seen = []
 
         def index(bundle, command='index'):
@@ -384,7 +399,7 @@ class ElasticsearchResource(Resource):
 
                     bulk_commands.append({'update':{'_id':bundle.data["_id"]}})
                     bulk_commands.append({'doc':bundle.obj})
-                    
+
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
@@ -420,7 +435,7 @@ class ElasticsearchResource(Resource):
         if len(bulk_commands):
             try:
                 result = self.client.bulk(bulk_commands, refresh=True,
-                                          index=self._meta.index, 
+                                          index=self._meta.index,
                                           doc_type=self._meta.doc_type)
             except Exception, exc:
                 response = http.HttpBadRequest(str(exc), content_type="text/plain")
