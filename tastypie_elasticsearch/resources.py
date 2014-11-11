@@ -159,8 +159,7 @@ class ElasticsearchResource(Resource):
 
         bundle.data.update(bundle.obj.get("_source", bundle.obj.get("fields")))
 
-        bundle.data['id'] = bundle.obj['_id']
-        bundle.data['_version'] = bundle.obj['_version']
+        #bundle.data['id'] = bundle.obj['_id']
 
         return bundle
 
