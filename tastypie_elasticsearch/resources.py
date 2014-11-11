@@ -235,7 +235,7 @@ class ElasticsearchResource(Resource):
         try:
             #basic_s = S().es(urls=settings.ES_URL).indexes('go_' + kwargs['body']['wid']).doctypes('subscribers')
 
-            basic_s = S().es(urls=self._meta.es_server).indexes(settings.environment + '_' + kwargs['body']['wid']).doctypes(self._meta.doc_type)
+            basic_s = S().es(urls=self._meta.es_server).indexes(self._meta.index + kwargs['body']['wid']).doctypes(self._meta.doc_type)
 
             start = kwargs['body']['from']
             end = kwargs['body']['size'] + start
