@@ -245,7 +245,7 @@ class ElasticsearchResource(Resource):
             #else:
             #    result = basic_s[start:end].filter(anonymous=kwargs['body']['anon']).order_by('email').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
-            result = basic_s[start:end].order_by('action').execute()
+            result = basic_s[start:end].order_by(self._meta.order_by).execute()
 
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
