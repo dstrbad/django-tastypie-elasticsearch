@@ -236,16 +236,11 @@ class ElasticsearchResource(Resource):
 
 
         try:
-            basic_s = S().es(urls=self._meta.es_server).indexes(self._meta.index + kwargs['body']['wid']).doctypes(self._meta.doc_type)
+            basic_s = S().es(urls=self._meta.es_server).indexes(self._meta.index + request.GET.get("wid")).doctypes(self._meta.doc_type)
 
-            start = kwargs['body']['from']
-            end = kwargs['body']['size'] + start
+            start = long(request.GET.get("offset", 0))
+            end = long(request.GET.get("limit", self._meta.limit)) + start
 
-            #if kwargs['body']['email__istartswith']:
-            #    result = basic_s[0:10].query(email__prefix=kwargs['body']['email__istartswith']).order_by('email').execute()
-            #else:
-            #    result = basic_s[start:end].filter(anonymous=kwargs['body']['anon']).order_by('email').execute()
-            #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
             if not contains:
                 result = basic_s[start:end].order_by(self._meta.order_by).execute()
             else:
