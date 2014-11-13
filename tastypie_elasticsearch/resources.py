@@ -230,12 +230,12 @@ class ElasticsearchResource(Resource):
         return result
 
     def get_object_list(self, request):
-        kwargs = dict()
-        kwargs['body'] = self.build_query(request)
+        #kwargs = dict()
+        #kwargs['body'] = self.build_query(request)
+        filter_contains = request.GET.get('contains', None)
+
 
         try:
-            #basic_s = S().es(urls=settings.ES_URL).indexes('go_' + kwargs['body']['wid']).doctypes('subscribers')
-
             basic_s = S().es(urls=self._meta.es_server).indexes(self._meta.index + kwargs['body']['wid']).doctypes(self._meta.doc_type)
 
             start = kwargs['body']['from']
@@ -246,10 +246,12 @@ class ElasticsearchResource(Resource):
             #else:
             #    result = basic_s[start:end].filter(anonymous=kwargs['body']['anon']).order_by('email').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
-            if kwargs['body']['contains']:
+            if not contains:
                 result = basic_s[start:end].order_by(self._meta.order_by).execute()
             else:
-                import pdb; pdb.set_trace()
+                param = {}
+                param [self._meta.filter_by] = filter_contains
+                result = basic_s[start:end].filter(**param).order_by(self._meta.order_by).execute()
 
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
