@@ -218,6 +218,7 @@ class ElasticsearchResource(Resource):
             "from": long(request.GET.get("offset", 0)),
             "size": long(request.GET.get("limit", self._meta.limit)),
             "email__istartswith": request.GET.get("email__istartswith", None),
+            'contains': request.GET.get("contains", None),
             "anon": request.GET.get("anonymous", "true"),
             "wid": request.GET.get("wid"),
             "sort": sort or [],
@@ -245,7 +246,10 @@ class ElasticsearchResource(Resource):
             #else:
             #    result = basic_s[start:end].filter(anonymous=kwargs['body']['anon']).order_by('email').execute()
             #result = self.client.search(self._meta.index, self._meta.doc_type, **kwargs)
-            result = basic_s[start:end].filter(self._meta.filter=kwargs['body']['contains']).order_by(self._meta.order_by).execute()
+            if kwargs['body']['contains']:
+                result = basic_s[start:end].order_by(self._meta.order_by).execute()
+            else:
+                import pdb; pdb.set_trace()
 
         except Exception, exc:
             response = http.HttpBadRequest(str(exc), content_type="text/plain")
