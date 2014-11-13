@@ -241,7 +241,7 @@ class ElasticsearchResource(Resource):
             start = long(request.GET.get("offset", 0))
             end = long(request.GET.get("limit", self._meta.limit)) + start
 
-            if not contains:
+            if not filter_contains:
                 result = basic_s[start:end].order_by(self._meta.order_by).execute()
             else:
                 param = {}
