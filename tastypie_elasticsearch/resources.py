@@ -230,8 +230,8 @@ class ElasticsearchResource(Resource):
         return result
 
     def get_object_list(self, request):
-        #kwargs = dict()
-        #kwargs['body'] = self.build_query(request)
+        kwargs = dict()
+        kwargs['body'] = self.build_query(request)
         filter_contains = request.GET.get('contains', None)
 
 
