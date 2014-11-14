@@ -249,8 +249,10 @@ class ElasticsearchResource(Resource):
                 result = basic_s[start:end].filter(**param).order_by(self._meta.order_by).execute()
 
         except Exception, exc:
-            response = http.HttpBadRequest(str(exc), content_type="text/plain")
-            raise ImmediateHttpResponse(response)
+            #response = http.HttpBadRequest(str(exc), content_type="text/plain")
+            #raise ImmediateHttpResponse(response)
+            response = {u'hits': {u'hits': [], u'total': 0, u'max_score': None}, u'_shards': {u'successful': 6, u'failed': 0, u'total': 6}, u'took': 1, u'timed_out': False}
+            return ElasticsearchResult(response, kwargs)
         else:
             return ElasticsearchResult(result.response, kwargs)
 
@@ -447,10 +449,8 @@ class ElasticsearchResource(Resource):
                                           index=self._meta.index,
                                           doc_type=self._meta.doc_type)
             except Exception, exc:
-                #response = http.HttpBadRequest(str(exc), content_type="text/plain")
-                #raise ImmediateHttpResponse(response)
-                response = {u'hits': {u'hits': [], u'total': 0, u'max_score': None}, u'_shards': {u'successful': 6, u'failed': 0, u'total': 6}, u'took': 1, u'timed_out': False}
-                return ElasticsearchResult(response, kwargs)
+                response = http.HttpBadRequest(str(exc), content_type="text/plain")
+                raise ImmediateHttpResponse(response)
             else:
                 if not self._meta.always_return_data:
                     return http.HttpAccepted(json.dumps(result))
