@@ -234,7 +234,6 @@ class ElasticsearchResource(Resource):
         kwargs['body'] = self.build_query(request)
         filter_contains = request.GET.get('contains', None)
 
-
         try:
             basic_s = S().es(urls=self._meta.es_server).indexes(self._meta.index + request.GET.get("wid")).doctypes(self._meta.doc_type)
 
@@ -242,11 +241,15 @@ class ElasticsearchResource(Resource):
             end = long(request.GET.get("limit", self._meta.limit)) + start
 
             if not filter_contains:
-                result = basic_s[start:end].order_by(self._meta.order_by).execute()
+                result = basic_s[start:end]
             else:
                 param = {}
                 param [self._meta.filter_by] = filter_contains
-                result = basic_s[start:end].filter(**param).order_by(self._meta.order_by).execute()
+                result = basic_s[start:end].filter(**param)
+
+            if getattr(self._meta, 'order_by', None) is not None:
+                result = result.order_by(self._meta.order_by)
+            result = result.execute()
 
         except Exception, exc:
             #response = http.HttpBadRequest(str(exc), content_type="text/plain")
